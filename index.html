@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pin Code Generator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="app">
+            <button v-on:click="generate()" class="btn btn-success"> Generate Pin Code</button>
+            <h1 id="pin">{{ pin }}</h1>
+            <hr>
+            <div id="used_pins" v-if="usedPins.size">
+                <h4>Used Pin's</h4>
+                <ul>
+                    <li v-for="(item, index) in usedPins.values()">
+                        {{ item }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <script>
+        var vm = new Vue({
+            el: '#app',
+            data: {
+                cache: new Map(),
+                pin: null,
+                usedPins: []
+            },
+            methods: {
+
+                /**
+                 * Generate pin code after click the button
+                 */
+                generate: function () {
+
+                    //Reset repeated pins after finish all possibilities
+                    this.resetCacheIfFullPossibilities();
+
+                    //Generate four digits numbers
+                    let generatedNumber = this.generateRandomNumber();
+
+                    //Regenerate pin if it is has similar combinations or used
+                    if( this.isSimilarCombinations(generatedNumber) || this.isRepeated(generatedNumber) ) {
+                        this.generate();
+                    }
+
+                    // Set the valid pin to be showed
+                    this.pin  = generatedNumber;
+
+                    //Set the old used pins to be showed
+                    this.showUsedPins();
+                },
+
+                /**
+                 * Show all used pin's by get all cached 
+                 * data without the current generated one.
+                 */
+                showUsedPins: function() {
+                    let newMap = new Map(this.cache);
+                    newMap.delete(this.pin);
+                    this.usedPins = newMap;
+                },
+
+                /**
+                 * Remove all data from the cache if all possibilities 
+                 * are generated to start from the beginning.
+                 */
+                resetCacheIfFullPossibilities: function() {
+                    if (this.cache.size === this.posibility()) {
+                        this.cache.clear();
+                    }
+                },
+
+                 /**
+                 * Calculate the posibility for the 4 digits number 
+                 * by get base number (0 - 9) length to the power of the digits length 
+                 * without the number of repeated digits which is 10 repeated 
+                 * numbers 0000, 1111 etc.
+                 */
+                posibility: function() {
+                    let digits = 4,
+                        digitsBase = 10;
+                    return (digitsBase ** digits) - 10;
+                },
+
+                 /**
+                 * Generate the random number and verify that it is 4 digits
+                 * by add 0 value if the number generated is not 4 digits.
+                 */
+                generateRandomNumber: function () {
+                    let randomNumber = Math.floor(Math.random() * 9999);
+                    while (randomNumber.toString().length < 4) {
+                        randomNumber = "0" + randomNumber;
+                    }
+                    return randomNumber;
+                },
+
+                /**
+                 * Verify that generated number is not in similar combinations
+                 * by check that all digits are not the same value.
+                 */
+                isSimilarCombinations: function (number) {
+                    let numberArray = number.toString().split("");
+                    return numberArray[0] === numberArray[1] === numberArray[2] === numberArray[3];
+                },
+
+                /**
+                 * Check if the generated number is used before or not 
+                 * by check the cached generated numbers.
+                 */
+                isRepeated: function(number) {
+                    if(this.cache.has(number))
+                        return true;
+                    this.cacheNumber(number);
+                },
+
+                 /**
+                 * Add generated number to the cache to keep track 
+                 * all old generated pin's.
+                 */
+                cacheNumber: function (value) {
+                    this.cache.set(value, value);
+                }
+
+            }
+        });
+    </script>
+</body>
+</html>
